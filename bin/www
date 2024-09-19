@@ -1,0 +1,136 @@
+var { app } = require("../app");
+var debug = require("debug")("AI Backend:server");
+var http = require("http");
+var socketapi = require("../socketapi");
+const Users = require("../models/userModel");
+const { Server } = require("socket.io");
+
+
+var httpPort = normalizePort(process.env.HTTP_PORT || "3000");
+app.set("httpPort", httpPort);
+
+var httpServer = http.createServer(app);
+
+const io = new Server(httpServer, {
+  cors: true,
+  method: ["GET", "POST"],
+});
+
+let users = [];
+
+io.on("connection", (socket) => {
+  console.log("Connection event handler called");
+  console.log("gourav user connected", socket.id);
+
+  socket.on("addUser", async (userId) => {
+    const user = await Users.findOne({ userId });
+    if (user) {
+      // Check if the user is already in the users array
+      const existingUserIndex = users.findIndex(
+        (u) => u.userId === user.userId
+      );
+      if (existingUserIndex === -1) {
+        user.socketId = socket.id; // Store socketId in the user object
+        users.push(user);
+        io.emit("getUsers", users);
+      }
+      console.log(users);
+    }
+  });
+
+  socket.on(
+    "sendMessage",
+    async ({ senderId, receiverId, message, conversationId }) => {
+      console.log(
+        "sendMessage event triggered with data:",
+        senderId,
+        receiverId,
+        message,
+        conversationId
+      );
+      // console.log("Socket ID:", socket.id);
+      // const receiver = await Users.find(user => user.userId === receiverId);
+      // const sender = await Users.find(user => user.userId === senderId);
+      // const user = await Users.find(user => user.userId === senderId);
+      const receiver = await Users.findOne({ _id: receiverId }); // Use findOne instead of find
+      const sender = await Users.findOne({ _id: senderId }); // Use findOne instead of find
+      const user = await Users.findOne({ _id: senderId });
+      // console.log("receiver:", receiver);
+      // console.log("sender:", sender);
+      // console.log("user", user);
+      if (receiver && sender) {
+        const receiverSocketId = receiver.socketId;
+        const senderSocketId = sender.socketId;
+        io.emit("getMessage", {
+            senderId,
+            message,
+            conversationId,
+            receiverId,
+            user: { id: user._id, username: user.username, email: user.email },
+          });
+        // console.log(
+        //   "getMessage event emitted to receiver:",
+        //   receiverId,
+        //   message,
+        //   senderId,
+        //   conversationId
+        // );
+        
+      } else {
+        console.error("Sender or receiver not found.");
+      }
+    }
+  );
+
+  socket.on("disconnect", () => {
+    users = users.filter((user) => user.socketId !== socket.id);
+    io.emit("getUsers", users);
+    console.log("Client disconnected");
+  });
+});
+
+// Initialize socketapi
+// socketapi.initialize(httpServer);
+
+// Now you can use socketapi.io if needed
+httpServer.listen(httpPort);
+httpServer.on("error", onError);
+httpServer.on("listening", onListening);
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+  if (isNaN(port)) {
+    return val;
+  }
+  if (port >= 0) {
+    return port;
+  }
+  return false;
+}
+
+function onError(error) {
+  if (error.syscall !== "listen") {
+    throw error;
+  }
+
+  var bind = typeof port === "string" ? "Pipe " + port : "Port " + port;
+
+  switch (error.code) {
+    case "EACCES":
+      console.error(bind + " requires elevated privileges");
+      process.exit(1);
+      break;
+    case "EADDRINUSE":
+      console.error(bind + " is already in use");
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+function onListening() {
+  var addr = httpServer.address();
+  var bind = typeof addr === "string" ? "pipe " + addr : "port " + addr.port;
+  debug("Listening on " + bind);
+}

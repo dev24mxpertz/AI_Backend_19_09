@@ -1,0 +1,146 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <link rel="stylesheet" href="../stylesheets/style.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+</head>
+<body>
+
+  <div id="main">
+    <div id="overlay">
+      <input type="text" placeholder="Fake name" id="fakename">
+      <button id="enter"> Enter </button>
+     </div>
+    <div id="box">
+      <div id="overlay2">
+        <div id="onlinebox">
+        </div>
+      </div>
+
+      <div id="onlinetag">
+         <h3>Online : <span>0</span></h3>
+      </div>
+      <div id="messagebox">
+        <div id="typing"></div>
+       <div id="message">
+        
+         
+       </div>        
+      </div>
+        <textarea name="" id="textarea" placeholder="Send a message !"></textarea>
+      
+    </div>
+  </div>
+  
+</body>
+
+<script src="http://localhost:3000/socket.io/socket.io.js"></script>
+<script>
+    var socket = io();
+    var username;
+ 
+
+
+    function sender(){
+      var textmessage =  document.querySelector("#textarea").value
+      socket.emit("msg",textmessage) ;     
+    }
+
+    document.querySelector("#textarea").addEventListener("keyup",function(dets){
+      if(dets.keyCode === 13){
+        sender();
+        document.querySelector("#textarea").value = '';
+        
+      }
+      })
+
+      
+
+      socket.on("reply",function(replymessage){
+        if(replymessage.userid === socket.id){
+          document.querySelector("#message").innerHTML += `<div id="rightmessage">
+          <div class="up"><h3>${replymessage.user}</h3></div>
+          <div class="down"><h4>${replymessage.textmessage}</h4></div>
+        </div>`
+        }
+        else{
+        document.querySelector("#message").innerHTML += `  <div id="leftmessage"> <h3> ${replymessage.user}</h3> <div class="h"><p> ${replymessage.textmessage}</p></div></div>`; 
+        }
+        var objDiv = document.querySelector("#messagebox");
+       objDiv.scrollTop = objDiv.scrollHeight;
+      })
+
+       function overlay(){
+        if(document.querySelector("#fakename").value.length >0){
+          username = document.querySelector("#fakename").value;
+         document.querySelector("#overlay").style.display = "none";
+       }
+       socket.emit("username",username)
+       }
+
+      document.querySelector("#enter").addEventListener("click",function(){
+          overlay()
+       }) 
+
+       document.querySelector("#fakename").addEventListener("keyup",function(dets){
+         if(dets.keyCode === 13){
+            overlay();
+         }
+         else{};
+       })
+
+       socket.on("onlineuser",function(data){
+         document.querySelector("#main #box #onlinetag h3 span").textContent = data.length;
+       })
+
+       document.querySelector("#onlinetag").addEventListener("click",function(){
+         document.querySelector("#onlinebox").style.display = "initial"
+         document.querySelector("#overlay2").style.display = "initial";
+
+       })
+      //  window.addEventListener("click",function(){
+      //    if(document.querySelector("#onlinebox").style.display === "initial"){
+      //     document.querySelector("#onlinebox").style.display = "none"
+      //    }
+      //    else{}
+      //  })
+
+      document.querySelector("#overlay2").addEventListener("click",function(){
+        document.querySelector("#overlay2").style.display = "none"
+      })
+
+       socket.on("onlineusername",function(data){
+         var clutter = ''
+         data.forEach(function(val){
+         clutter += `<div id="online">
+             <h3>${val}</h3>
+            <div id = "onlinemark">  <span>Online</span> <div id = "onlinemark2"> </div> </div>
+          </div>`
+         })
+         document.querySelector("#onlinebox").innerHTML = clutter;
+       })
+
+
+       document.querySelector("#textarea").addEventListener("keydown",function(dets){
+         if(dets.keyCode !== 13){
+           socket.emit("typing", username);
+         }
+       })
+
+       socket.on("usertyping",function(value){
+         let type = document.querySelector("#typing")
+         type.innerText = `${value} is typing...`
+         setTimeout(function(){
+         type.innerText = '';
+         },500);
+         })
+
+
+ 
+</script>
+
+</html> -->
